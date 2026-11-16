@@ -1,0 +1,80 @@
+stages:
+  - validate
+  - test
+  - build
+  - docker-build
+  - docker-push
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_TAG: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+
+cache:
+  key: "$CI_PROJECT_ID-maven"
+  paths:
+    - .m2/repository/
+
+validate:
+  stage: validate
+  image: maven:3.9.11-eclipse-temurin-21
+  script:
+    - ./mvnw -B -ntp -DskipTests validate
+
+test:
+  stage: test
+  image: maven:3.9.11-eclipse-temurin-21
+  script:
+    - ./mvnw -B -ntp clean verify
+  artifacts:
+    when: always
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+    paths:
+      - target/site/jacoco/
+
+build:
+  stage: build
+  image: maven:3.9.11-eclipse-temurin-21
+  script:
+    - ./mvnw -B -ntp -DskipTests package
+  artifacts:
+    paths:
+      - target/*.jar
+    expire_in: 1 day
+
+docker-build:
+  stage: docker-build
+  image: docker:27-cli
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: /certs
+  script:
+    - docker build --pull --tag "$IMAGE_TAG" .
+    - docker save "$IMAGE_TAG" -o image.tar
+  artifacts:
+    paths:
+      - image.tar
+    expire_in: 1 day
+
+docker-push:
+  stage: docker-push
+  image: docker:27-cli
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: /certs
+  dependencies:
+    - docker-build
+  script:
+    - docker load -i image.tar
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+    - docker push "$IMAGE_TAG"
+    - docker logout "$CI_REGISTRY"
+  rules:
+    - if: '$CI_COMMIT_BRANCH || $CI_COMMIT_TAG'

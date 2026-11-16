@@ -47,4 +47,3 @@ Default tests run with `./mvnw clean test`; `./mvnw verify` also creates the JaC
 ## Basic Docker and CI
 
 `Dockerfile`, `docker-compose.yml`, and `.env.example` demonstrate running the API against an existing SQL Server. `.gitlab-ci.yml` has only validate, test, build, docker-build, and docker-push stages. Registry publishing requires a GitLab runner with Docker build capability. This starter does not include production deployment automation, a monitoring stack, Kubernetes, or Helm.
-

@@ -1,0 +1,144 @@
+openapi: 3.1.0
+info:
+  title: Catalog Platform API
+  version: 1.0.0
+  description: Catalog, category, inventory and order API. Non-local calls use HTTP Basic authentication for learning.
+servers:
+  - url: http://localhost:8080
+security:
+  - basicAuth: []
+paths:
+  /api/v1/products:
+    get:
+      summary: Search products
+      description: Requires an authenticated user.
+      parameters:
+        - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: categoryId, schema: { type: integer, format: int64, minimum: 1 } }
+        - { in: query, name: page, schema: { type: integer, minimum: 0, default: 0 } }
+        - { in: query, name: size, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200': { description: Paginated product view }
+        '401': { description: Missing or invalid token }
+        '403': { description: Missing or invalid credentials }
+    post:
+      summary: Create product
+      description: Requires an authenticated user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateProduct' }
+      responses:
+        '201': { description: Created; Location header identifies resource }
+        '409': { description: SKU already exists }
+  /api/v1/products/{id}:
+    get:
+      summary: Get product
+      description: Requires an authenticated user.
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+      responses: { '200': { description: Product }, '404': { description: Missing product } }
+    put:
+      summary: Update product
+      description: Requires an authenticated user.
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+      responses: { '200': { description: Updated product }, '409': { description: Optimistic locking conflict } }
+    delete:
+      summary: Delete product
+      description: Requires an authenticated user. Product deletion is rejected when stock or order history references it.
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+      responses: { '204': { description: Deleted } }
+  /api/v1/orders:
+    post:
+      summary: Create or replay an idempotent stock reservation order
+      description: Requires an authenticated user. Duplicate product lines are combined and stock is reserved in the same SQL Server transaction.
+      parameters: [{ in: header, name: Idempotency-Key, required: true, schema: { type: string, minLength: 8, maxLength: 128 } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateOrder' }
+      responses: { '201': { description: Reserved order }, '409': { description: Insufficient stock or key race } }
+  /api/v1/orders/{id}:
+    get:
+      summary: Read an order owned by the authenticated actor
+      description: Requires an authenticated user.
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+      responses: { '200': { description: Order snapshot }, '404': { description: Missing or not-owned order } }
+  /api/v1/orders/{id}/cancel:
+    post:
+      summary: Cancel a reserved order and release stock atomically
+      description: Requires an authenticated user.
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer, format: int64 } }]
+      responses: { '200': { description: Cancelled order }, '409': { description: Order is not reservable } }
+  /api/v1/categories:
+    get:
+      summary: List categories
+      description: Requires an authenticated user.
+      responses: { '200': { description: Category collection } }
+    post:
+      summary: Create category
+      description: Requires an authenticated user.
+      responses: { '201': { description: Category created }, '409': { description: Category name or slug already exists } }
+  /api/v1/categories/{categoryId}/products/{productId}:
+    put:
+      summary: Assign a product to a category
+      description: Requires an authenticated user.
+      parameters:
+        - { in: path, name: categoryId, required: true, schema: { type: integer, format: int64 } }
+        - { in: path, name: productId, required: true, schema: { type: integer, format: int64 } }
+      responses: { '204': { description: Assignment created or already existed } }
+    delete:
+      summary: Remove a product-category assignment
+      description: Requires an authenticated user.
+      parameters:
+        - { in: path, name: categoryId, required: true, schema: { type: integer, format: int64 } }
+        - { in: path, name: productId, required: true, schema: { type: integer, format: int64 } }
+      responses: { '204': { description: Assignment removed } }
+  /api/v1/inventory/{productId}:
+    get:
+      summary: Read on-hand, reserved and available quantities
+      description: Requires an authenticated user.
+      parameters: [{ in: path, name: productId, required: true, schema: { type: integer, format: int64 } }]
+      responses: { '200': { description: Inventory view }, '404': { description: Inventory row missing } }
+  /api/v1/inventory/{productId}/adjust:
+    post:
+      summary: Apply a manual stock adjustment
+      description: Requires an authenticated user. Quantity is a nonzero signed delta; reference is audit metadata.
+      parameters: [{ in: path, name: productId, required: true, schema: { type: integer, format: int64 } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quantity]
+              properties:
+                quantity: { type: integer, minimum: -1000000, maximum: 1000000, not: { const: 0 } }
+                reference: { type: string, maxLength: 200 }
+      responses: { '200': { description: Inventory adjusted }, '409': { description: Adjustment would reduce on-hand below reserved quantity } }
+components:
+  securitySchemes:
+    basicAuth: { type: http, scheme: basic }
+  schemas:
+    CreateProduct:
+      type: object
+      required: [sku, name, price, active]
+      properties:
+        sku: { type: string, maxLength: 64, pattern: '^[A-Za-z0-9_-]+$' }
+        name: { type: string, maxLength: 200 }
+        price: { type: number, minimum: 0, multipleOf: 0.01 }
+        active: { type: boolean }
+    CreateOrder:
+      type: object
+      required: [lines]
+      properties:
+        lines:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [productId, quantity]
+            properties:
+              productId: { type: integer, format: int64 }
+              quantity: { type: integer, minimum: 1 }

@@ -1,0 +1,6 @@
+# ONLY for Docker Compose / isolated developer workstations.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=catalog;encrypt=true;trustServerCertificate=true}
+    username: ${DB_USERNAME:catalog_app}
+    password: ${DB_PASSWORD}

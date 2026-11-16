@@ -1,0 +1,4 @@
+security:
+  user:
+    name: ${APP_USERNAME:learner}
+    password: ${APP_PASSWORD}
