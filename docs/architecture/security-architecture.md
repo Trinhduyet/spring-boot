@@ -1,10 +1,11 @@
 # Basic security configuration
 
-Spring Security protects `/api/**` with HTTP Basic and a single in-memory user in the development profile. The username/password are read from environment-backed configuration; BCrypt encodes the password in memory. Health checks are public. The local profile is permit-all for isolated learning and the test profile is isolated for automated tests.
+Spring Security protects `/api/**` with HTTP Basic and a single in-memory user in the development profile. The username/password are read from environment-backed configuration; BCrypt encodes the password in memory. Health checks, Swagger UI, and OpenAPI are public; Swagger advertises HTTP Basic for API calls. The local profile is permit-all for isolated learning and the test profile is isolated for automated tests.
 
 ```java
 http.authorizeHttpRequests(auth -> auth
         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**").permitAll()
         .requestMatchers("/api/**").hasRole("USER")
         .anyRequest().denyAll())
     .httpBasic(Customizer.withDefaults());

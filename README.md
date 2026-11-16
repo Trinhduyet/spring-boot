@@ -14,7 +14,7 @@ Requirements: JDK 21 and the Maven Wrapper. Tests do not need a database service
 ./mvnw clean test
 ```
 
-For local API use, configure `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`, then run with the `local` profile. Local profile intentionally disables authentication for isolated development. Do not expose it on a shared network. Runtime uses `ddl-auto=validate`; compare mappings with the actual database schema before connecting. Flyway is disabled by default and should be explicitly enabled only after migration review and approval. Never use `ddl-auto=create`/`update` against existing data.
+For local API use, configure `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`, then run with the `local` profile. Local profile intentionally disables authentication for isolated development. Do not expose it on a shared network. Runtime uses `ddl-auto=validate`; compare mappings with the actual database schema before connecting. Flyway is disabled by default and should be explicitly enabled only after migration review and approval. Never use `ddl-auto=create`/`update` against existing data. For Railway PostgreSQL, activate `dev,postgres` and follow the [PostgreSQL and Railway guide](docs/database/postgresql-railway.md).
 
 ## Learn in this order
 
@@ -32,7 +32,7 @@ The source of truth is executable code and focused tests. [Architecture overview
 
 ## API
 
-Product and category endpoints are under `/api/v1`. OpenAPI UI is available at `/swagger-ui/index.html` when running locally. Product listing supports search, sorting, and pagination; DTO validation and consistent API errors are implemented at the HTTP boundary.
+Product and category endpoints are under `/api/v1`. OpenAPI UI is available at `/swagger-ui/index.html`; in the `dev` profile the UI and OpenAPI specification are public, while `/api/**` requires HTTP Basic. Use the Swagger **Authorize** button with the configured application credentials. Product listing supports search, sorting, and pagination; DTO validation and consistent API errors are implemented at the HTTP boundary.
 
 The primary learning path is Product and Category. The repository also retains inventory, order, and audit examples for transaction and persistence exercises.
 
@@ -40,7 +40,7 @@ The `dev` profile demonstrates HTTP Basic with `APP_USERNAME` and `APP_PASSWORD`
 
 ## Database and test scope
 
-Runtime development connects to the existing SQL Server through environment variables. H2 is used only for fast tests. H2 does not prove SQL Server dialect, locking, collation, migration, or constraint compatibility; those behaviors remain unverified until exercised against an authorized SQL Server environment.
+The default runtime connects to SQL Server through environment variables. The optional `postgres` profile selects PostgreSQL and its own migration directory. H2 is used only for fast tests and does not prove PostgreSQL or SQL Server dialect, locking, collation, migration, or constraint compatibility.
 
 Default tests run with `./mvnw clean test`; `./mvnw verify` also creates the JaCoCo report and enforces the configured coverage gate. The suite includes JUnit 5, Mockito, AssertJ, Spring Boot test support, and H2 repository/context tests. No Testcontainers or external SQL Server is required.
 

@@ -1,7 +1,7 @@
 # Future SQL Server to PostgreSQL path
 
-PostgreSQL is not a current runtime dependency or deployment target. A future move requires separate vendor-specific Flyway scripts and a deliberate Hibernate dialect/configuration profile; the SQL Server migrations must not be assumed portable. Preserve `BigDecimal`, UTC `Instant`, JPQL, repository abstractions and module contracts. Keep vendor-specific locking and DDL isolated.
+The `postgres` profile now supports a separate PostgreSQL database using its own JDBC driver and Flyway migrations. The existing SQL Server configuration and migrations remain available. See [PostgreSQL and Railway setup](postgresql-railway.md); scripts for one vendor must not be applied to the other.
 
-Migration plan: inventory data and SQL Server-specific features; map types/collations/identity behavior; create and review PostgreSQL DDL; perform an offline test conversion; copy a production-like snapshot; reconcile counts, keys, decimals, timestamps and application-level invariants; rehearse downtime or dual-write/cutover design; validate reads/writes and rollback boundaries; then schedule cutover with backups and a tested recovery plan. Do not add the PostgreSQL driver until that work is authorized.
+Changing the connection does not copy SQL Server data. For an actual data migration, inventory and reconcile existing data, keys, decimals and timestamps; review collation and locking differences; rehearse cutover and rollback with an appropriate backup. H2 tests do not establish SQL Server or PostgreSQL equivalence.
 
 

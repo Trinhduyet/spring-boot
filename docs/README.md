@@ -2,6 +2,8 @@
 
 Start here: [Hướng dẫn cấu trúc dự án, Java core, Spring và annotations](huong-dan-java-spring.md). The Vietnamese guide follows the Product request through the actual source and compares Java/Spring with .NET.
 
+For PostgreSQL on Railway, including profile, variables, migrations and Swagger access, see [PostgreSQL and Railway](database/postgresql-railway.md).
+
 | Path | Purpose |
 |---|---|
 | `architecture/` | Package-by-feature structure, request flow, and database model |

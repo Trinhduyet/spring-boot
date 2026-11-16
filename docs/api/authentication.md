@@ -1,6 +1,6 @@
 # Basic API authentication
 
-The `local` and `test` profiles permit requests so the API is easy to run and test in isolation. Other profiles use stateless HTTP Basic authentication. In `dev`, the username and password come from `APP_USERNAME` and `APP_PASSWORD`; the password is encoded with BCrypt for the in-memory user store. No user database or token issuer is part of this learning example.
+The `local` and `test` profiles permit requests so the API is easy to run and test in isolation. Other profiles use stateless HTTP Basic authentication for `/api/**`. Health, Swagger UI (`/swagger-ui.html`, `/swagger-ui/**`) and OpenAPI (`/v3/api-docs/**`) are public; other paths remain denied. In `dev`, the username and password come from `APP_USERNAME` and `APP_PASSWORD`; the password is encoded with BCrypt for the in-memory user store. The Swagger UI Authorize button sends HTTP Basic credentials for API calls. No user database or token issuer is part of this learning example.
 
 ```bash
 curl -u "$APP_USERNAME:$APP_PASSWORD" http://localhost:8080/api/v1/products

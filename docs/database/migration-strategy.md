@@ -4,4 +4,6 @@ Flyway scripts describe candidate schema changes; Hibernate only validates. Flyw
 
 For existing data, inventory constraints, duplicates, nulls and row counts first. Reconcile data in bounded, restartable scripts with before/after counts and a restore plan. Use expand/migrate/contract for breaking changes. Coordinate Flyway permissions with the DBA; runtime users should not receive broad server administration rights.
 
+PostgreSQL uses the separate `db/migration-postgresql` location when the `postgres` profile is active. Inspect its target schema and Flyway history independently and review those scripts before enabling Flyway; SQL Server migration versions/checksums are not portable. See [PostgreSQL and Railway](postgresql-railway.md).
+
 
